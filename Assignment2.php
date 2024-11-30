@@ -1,115 +1,81 @@
 <?php
-// Database connection
-$pdo = new PDO('mysql:host=localhost;dbname=room_booking', 'username', 'password');
-
-// Fetch room usage statistics
-$query = "SELECT rooms.room_name, COUNT(bookings.booking_id) AS usage_count 
-          FROM bookings 
-          INNER JOIN rooms ON bookings.room_id = rooms.room_id 
-          WHERE bookings.status = 'Confirmed' 
-          GROUP BY bookings.room_id";
-$stmt = $pdo->prepare($query);
-$stmt->execute();
-$roomUsage = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Fetch user bookings
-$userId = 1; // Replace with logged-in user's ID
-$query = "SELECT rooms.room_name, booking_date, time_slot, status 
-          FROM bookings 
-          INNER JOIN rooms ON bookings.room_id = rooms.room_id 
-          WHERE bookings.user_id = :user_id";
-$stmt = $pdo->prepare($query);
-$stmt->execute(['user_id' => $userId]);
-$userBookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+ 
+$url = "https://data.gov.bh/api/explore/v2.1/catalog/datasets/01-statistics-of-students-nationalities_updated/records?where=colleges%20like%20%22IT%22%20AND%20the_programs%20like%20%22bachelor%22&limit=100";
+ 
+$response = file_get_contents($url);
+$data = json_decode($response, true);
+ 
+ 
+if(!$data || !isset($data["results"])){
+die('error fetching the data from API');
+}
+$result = $data["results"];
 ?>
-<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <title>Reporting & Analytics</title>
-</head>
-<body>
-<div class="container my-5">
-    <h1>Reporting & Analytics</h1>
-
-    <!-- Room Usage Report -->
-    <section>
-        <h2>Room Usage Report</h2>
-        <table class="table table-striped">
-            <thead>
-            <tr>
-                <th>Room Name</th>
-                <th>Usage Count</th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($roomUsage as $room): ?>
-                <tr>
-                    <td><?= htmlspecialchars($room['room_name']) ?></td>
-                    <td><?= htmlspecialchars($room['usage_count']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </section>
-
-    <!-- User Bookings -->
-    <section class="my-5">
-        <h2>My Bookings</h2>
-        <table class="table table-bordered">
-            <thead>
-            <tr>
-                <th>Room Name</th>
-                <th>Booking Date</th>
-                <th>Time Slot</th>
-                <th>Status</th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($userBookings as $booking): ?>
-                <tr>
-                    <td><?= htmlspecialchars($booking['room_name']) ?></td>
-                    <td><?= htmlspecialchars($booking['booking_date']) ?></td>
-                    <td><?= htmlspecialchars($booking['time_slot']) ?></td>
-                    <td><?= htmlspecialchars($booking['status']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </section>
-
-    <!-- Room Popularity Chart -->
-    <section class="my-5">
-        <h2>Room Popularity</h2>
-        <canvas id="popularityChart"></canvas>
-    </section>
-</div>
-
-<script>
-    const ctx = document.getElementById('popularityChart').getContext('2d');
-    const chartData = {
-        labels: <?= json_encode(array_column($roomUsage, 'room_name')) ?>,
-        datasets: [{
-            label: 'Bookings',
-            data: <?= json_encode(array_column($roomUsage, 'usage_count')) ?>,
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 1
-        }]
-    };
-    new Chart(ctx, {
-        type: 'bar',
-        data: chartData,
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'top' }
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+        body {
+            background-color: #f8f9fa; /* Light background color */
+            font-family: Arial, sans-serif; /* Font style */
+            padding: 20px; /* Padding around the page */
+        }
+        table {
+            width: 100%; /* Make the table full width */
+            border-collapse: collapse; /* Remove space between cells */
+            margin-top: 20px; /* Space above the table */
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        }
+        th, td {
+            padding: 12px; /* Padding inside cells */
+            text-align: left; /* Align text to the left */
+            border-bottom: 1px solid #ddd; /* Bottom border for rows */
+        }
+        th {
+            background-color: #007bff; /* Header background color */
+            color: white; /* Header text color */
+        }
+        tr:hover {
+            background-color: #f1f1f1; /* Highlight row on hover */
+        }
+        @media (max-width: 600px) {
+            table {
+                font-size: 14px; /* Adjust font size for smaller screens */
             }
         }
-    });
-</script>
+    </style>
+</head>
+<body>
+<div class="container">
+<h1>University of Bahrain Students Enrollment by Nationality</h1>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Semester</th>
+<th>The programs</th>
+<th>Nationality</th>
+<th>Colleges</th>
+<th>Number Of Students</th>
+</tr>
+</thead>
+<tbody>
+<?php
+foreach($result as $student) {
+?>
+<tr>
+<td><?php echo $student["year"]; ?></td>
+<td><?php echo $student["semester"]; ?></td>
+<td><?php echo $student["the_programs"]; ?></td>
+<td><?php echo $student["nationality"]; ?></td>
+<td><?php echo $student["colleges"]; ?></td>
+<td><?php echo $student["number_of_students"]; ?></td>
+</tr>
+<?php
+}
+?>
+</tbody>
+</table>
+</div>
 </body>
 </html>
